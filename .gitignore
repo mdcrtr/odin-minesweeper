@@ -1,0 +1,6 @@
+odin-minesweeper
+*.bak
+*.bin
+*.exe
+*.log
+*.out

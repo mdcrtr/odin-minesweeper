@@ -1,2 +1,2 @@
 # odin-minesweeper
-Minesweeper implemented with odin and raylib
+Minesweeper implemented in odin language using raylib
