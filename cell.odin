@@ -17,8 +17,8 @@ Cell :: struct {
 
 cell_init :: proc(tile: int, x: int, y: int) -> Cell {
     return {
-        x = x,
-        y = y,
+        x = x * S,
+        y = y * S,
         tile = tile
     }
 }
