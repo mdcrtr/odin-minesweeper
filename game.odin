@@ -5,120 +5,110 @@ import rl "vendor:raylib"
 W :: 16
 H :: 16
 B :: 16
-OX :: 34
-OY :: 34
 
 GameOutcome :: enum {
-    PLAYING,
-    LOST,
-    WON
-}
-
-Conf :: struct {
-    screen_width: int,
-    screen_height: int
+	PLAYING,
+	LOST,
+	WON,
 }
 
 Game :: struct {
-    screen_width: int,
-    screen_height: int,
-    zoom: int,
-    camera: rl.Camera2D,
-    outcome: GameOutcome,
-    grid: Grid
+	camera:    rl.Camera2D,
+	outcome:   GameOutcome,
+	grid:      Grid,
+	mouse_pos: rl.Vector2,
 }
 
 game_resize :: proc(game: ^Game) {
-    game.screen_width = int(rl.GetScreenWidth())
-    game.screen_height = int(rl.GetScreenHeight())
-    size := min(game.screen_width, game.screen_height)
-    game.zoom = size / 140
-    game.camera.zoom = f32(game.zoom)
+	screen_size := rl.Vector2{f32(rl.GetScreenWidth()), f32(rl.GetScreenHeight())}
+	design_size := rl.Vector2{W * S, H * S + 8}
+	screen_aspect := screen_size.x / screen_size.y
+	design_aspect := design_size.x / design_size.y
+	if screen_aspect > design_aspect {
+		game.camera.zoom = screen_size.y / design_size.y
+	} else {
+		game.camera.zoom = screen_size.x / design_size.x
+	}
 }
 
 hit_bomb :: proc(game: ^Game) {
-    grid_reveal_bombs(&game.grid)
-    game.outcome = .LOST
+	grid_reveal_bombs(&game.grid)
+	game.outcome = .LOST
 }
 
-game_create :: proc(conf: Conf) -> Game {    
-    return {
-        screen_width = conf.screen_width,
-        screen_height = conf.screen_height,
-        zoom = 1,
-        outcome = .PLAYING,
-        grid = grid_create(W, H),
-        camera = {
-            offset = {OX, OY},
-            zoom = 1
-        }
-    }
+game_create :: proc() -> Game {
+	return {outcome = .PLAYING, grid = grid_create(W, H), camera = {zoom = 1}}
 }
 
 game_free :: proc(game: ^Game) {
-    grid_free(&game.grid)
+	grid_free(&game.grid)
 }
 
 game_init :: proc(game: ^Game) {
-    grid_init(&game.grid, B)
-    game.outcome = .PLAYING
+	grid_init(&game.grid, B)
+	game.outcome = .PLAYING
+	game_resize(game)
 }
 
 game_update :: proc(game: ^Game) {
-    if rl.IsWindowResized() {
-        game_resize(game)
-    }
+	if rl.IsWindowResized() {
+		game_resize(game)
+	}
 
-    btn_left := rl.IsMouseButtonPressed(.LEFT)
-    btn_right := rl.IsMouseButtonPressed(.RIGHT)
+	btn_left := rl.IsMouseButtonPressed(.LEFT)
+	btn_right := rl.IsMouseButtonPressed(.RIGHT)
 
-    if !(btn_left || btn_right) {
-        return
-    }
+	mouse_pos := rl.GetScreenToWorld2D(rl.GetMousePosition(), game.camera)
+	game.mouse_pos = mouse_pos
 
-    if game.outcome != .PLAYING {
-        if btn_left {
-            game_init(game)
-        }
-        return
-    }
+	if !(btn_left || btn_right) {
+		return
+	}
 
-    x := int(rl.GetMouseX() - OX) / int(game.camera.zoom) / S
-    y := int(rl.GetMouseY() - OY) / int(game.camera.zoom) / S
+	if game.outcome != .PLAYING {
+		if btn_left {
+			game_init(game)
+		}
+		return
+	}
 
-    cell := grid_get_cell(&game.grid, x, y)
-    if cell == nil {
-        return
-    }
+	x := int(mouse_pos.x) / S
+	y := int(mouse_pos.y) / S
 
-    if btn_left {
-        if cell.bomb {
-            hit_bomb(game)
-        }
-        else {
-            grid_reveal(&game.grid, x, y)
-        }
-    }
-    else if btn_right {
-        cell_toggle_flag(cell)
-    }
+	cell := grid_get_cell(&game.grid, x, y)
+	if cell == nil {
+		return
+	}
 
-    if grid_is_win(&game.grid) {
-        game.outcome = .WON
-    }
+	if btn_left {
+		if cell.bomb {
+			hit_bomb(game)
+		} else {
+			grid_reveal(&game.grid, x, y)
+		}
+	} else if btn_right {
+		cell_toggle_flag(cell)
+	}
+
+	if grid_is_win(&game.grid) {
+		game.outcome = .WON
+	}
 }
 
 game_draw :: proc(game: ^Game) {
-    rl.BeginDrawing()
-    rl.BeginMode2D(game.camera)
-    rl.ClearBackground(rl.BLACK)
-    grid_draw(&game.grid)
-    rl.EndMode2D()
-    if game.outcome == .WON {
-        rl.DrawText("you have won", 0, 0, 32, rl.RED)
-    }
-    else if game.outcome == .LOST {
-        rl.DrawText("you have lost", 0, 0, 32, rl.RED)
-    }
-    rl.EndDrawing()
+	rl.BeginDrawing()
+	rl.BeginMode2D(game.camera)
+	rl.ClearBackground(rl.BLACK)
+	grid_draw(&game.grid)
+	rl.DrawCircleV(game.mouse_pos, 2, rl.GREEN)
+	rl.EndMode2D()
+
+
+	y := i32(rl.GetScreenHeight()) - 44
+	if game.outcome == .WON {
+		rl.DrawText("you have won", 8, y, 40, rl.RED)
+	} else if game.outcome == .LOST {
+		rl.DrawText("you have lost", 8, y, 40, rl.RED)
+	}
+	rl.EndDrawing()
 }
