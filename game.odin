@@ -2,14 +2,11 @@ package main
 
 import rl "vendor:raylib"
 
-W :: 16
-H :: 16
-B :: 16
-
 GameOutcome :: enum {
 	PLAYING,
 	LOST,
 	WON,
+	FINISHED,
 }
 
 Game :: struct {
@@ -21,7 +18,7 @@ Game :: struct {
 
 game_resize :: proc(game: ^Game) {
 	screen_size := rl.Vector2{f32(rl.GetScreenWidth()), f32(rl.GetScreenHeight())}
-	design_size := rl.Vector2{W * S, H * S + 8}
+	design_size := rl.Vector2{f32(game.grid.width * S), f32(game.grid.height * S + 8)}
 	screen_aspect := screen_size.x / screen_size.y
 	design_aspect := design_size.x / design_size.y
 	if screen_aspect > design_aspect {
@@ -36,18 +33,16 @@ hit_bomb :: proc(game: ^Game) {
 	game.outcome = .LOST
 }
 
-game_create :: proc() -> Game {
-	return {outcome = .PLAYING, grid = grid_create(W, H), camera = {zoom = 1}}
+game_create :: proc(config: Config) -> Game {
+	return {
+		outcome = .PLAYING,
+		grid = grid_create(config.grid_width, config.grid_height, config.bomb_count),
+		camera = {zoom = 1},
+	}
 }
 
 game_free :: proc(game: ^Game) {
 	grid_free(&game.grid)
-}
-
-game_init :: proc(game: ^Game) {
-	grid_init(&game.grid, B)
-	game.outcome = .PLAYING
-	game_resize(game)
 }
 
 game_update :: proc(game: ^Game) {
@@ -67,7 +62,7 @@ game_update :: proc(game: ^Game) {
 
 	if game.outcome != .PLAYING {
 		if btn_left {
-			game_init(game)
+			game.outcome = .FINISHED
 		}
 		return
 	}
@@ -96,9 +91,7 @@ game_update :: proc(game: ^Game) {
 }
 
 game_draw :: proc(game: ^Game) {
-	rl.BeginDrawing()
 	rl.BeginMode2D(game.camera)
-	rl.ClearBackground(rl.BLACK)
 	grid_draw(&game.grid)
 	rl.DrawCircleV(game.mouse_pos, 2, rl.GREEN)
 	rl.EndMode2D()
@@ -110,5 +103,4 @@ game_draw :: proc(game: ^Game) {
 	} else if game.outcome == .LOST {
 		rl.DrawText("you have lost", 8, y, 40, rl.RED)
 	}
-	rl.EndDrawing()
 }
