@@ -33,12 +33,14 @@ hit_bomb :: proc(game: ^Game) {
 	game.outcome = .LOST
 }
 
-game_create :: proc(config: Config) -> Game {
-	return {
-		outcome = .PLAYING,
-		grid = grid_create(config.grid_width, config.grid_height, config.bomb_count),
-		camera = {zoom = 1},
+game_init :: proc(game: ^Game, config: Config) {
+	game_free(game)
+	game.outcome = .PLAYING
+	game.camera = {
+		zoom = 1,
 	}
+	grid_init(&game.grid, config)
+	game_resize(game)
 }
 
 game_free :: proc(game: ^Game) {
@@ -91,11 +93,10 @@ game_update :: proc(game: ^Game) {
 }
 
 game_draw :: proc(game: ^Game) {
+	rl.ClearBackground(rl.BLACK)
 	rl.BeginMode2D(game.camera)
 	grid_draw(&game.grid)
-	rl.DrawCircleV(game.mouse_pos, 2, rl.GREEN)
 	rl.EndMode2D()
-
 
 	y := i32(rl.GetScreenHeight()) - 44
 	if game.outcome == .WON {

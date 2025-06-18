@@ -8,24 +8,24 @@ Grid :: struct {
 	cells:  []Cell,
 }
 
-grid_create :: proc(width: int, height: int, bomb_count: int) -> Grid {
-	grid := Grid {
-		width  = width,
-		height = height,
-		cells  = make([]Cell, width * height),
-	}
-	grid_init(&grid, bomb_count)
-	return grid
+grid_init :: proc(grid: ^Grid, config: Config) {
+	grid.width = config.grid_width
+	grid.height = config.grid_height
+	grid.cells = make([]Cell, config.grid_width * config.grid_height)
+	grid_fill(grid, config.bomb_count)
 }
 
 grid_free :: proc(grid: ^Grid) {
+	if grid.cells == nil {
+		return
+	}
 	delete(grid.cells)
 	grid.cells = nil
 	grid.width = 0
 	grid.height = 0
 }
 
-grid_init :: proc(grid: ^Grid, num_bombs: int) {
+grid_fill :: proc(grid: ^Grid, num_bombs: int) {
 	x := 0
 	y := 0
 	for i := 0; i < len(grid.cells); i += 1 {

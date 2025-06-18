@@ -79,27 +79,23 @@ Menu :: struct {
 	play_pressed: bool,
 }
 
-menu_get_grid_width :: proc(menu: Menu) -> int {
-	return menu.sliders[0].value
+menu_write_config :: proc(menu: Menu, config: ^Config) {
+	config.grid_width = menu.sliders[0].value
+	config.grid_height = menu.sliders[1].value
+	config.bomb_count = menu.sliders[2].value
 }
 
-menu_get_grid_height :: proc(menu: Menu) -> int {
-	return menu.sliders[1].value
-}
-
-menu_get_bomb_count :: proc(menu: Menu) -> int {
-	return menu.sliders[2].value
-}
-
-menu_init :: proc(config: Config) -> Menu {
-	return {
-		sliders = {
-			slider_init(100, 80, "Grid Width", config.grid_width, 5, 20),
-			slider_init(100, 200, "Grid Height", config.grid_height, 5, 20),
-			slider_init(100, 320, "Bomb Count", config.bomb_count, 4, 40),
-		},
-		button_play = {rect = {100, 500, 440, 60}, text = "Play"},
+menu_init :: proc(menu: ^Menu, config: Config) {
+	menu.sliders = {
+		slider_init(100, 80, "Grid Width", config.grid_width, 5, 20),
+		slider_init(100, 200, "Grid Height", config.grid_height, 5, 20),
+		slider_init(100, 320, "Bomb Count", config.bomb_count, 4, 40),
 	}
+	menu.button_play = {
+		rect = {100, 500, 440, 60},
+		text = "Play",
+	}
+	menu.play_pressed = false
 }
 
 menu_update :: proc(menu: ^Menu) {
@@ -120,6 +116,8 @@ menu_update :: proc(menu: ^Menu) {
 }
 
 menu_draw :: proc(menu: Menu) {
+	rl.ClearBackground(rl.BLACK)
+
 	for slider in menu.sliders {
 		slider_draw(slider)
 	}

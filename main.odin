@@ -36,44 +36,39 @@ SceneState :: enum {
 }
 
 main :: proc() {
-	conf := process_args()
+	config := process_args()
 	rl.SetTraceLogLevel(.ERROR)
 	rl.SetConfigFlags({rl.ConfigFlag.WINDOW_RESIZABLE})
-	rl.InitWindow(i32(conf.screen_width), i32(conf.screen_height), "minesweeper")
+	rl.InitWindow(i32(config.screen_width), i32(config.screen_height), "minesweeper")
 	rl.SetTargetFPS(30)
 	loadTexture("minesweeper.png")
 
+	menu: Menu
+	game: Game
 	scene_state := SceneState.Menu
 
-	menu := menu_init(conf)
-	game := game_create(conf)
+	menu_init(&menu, config)
 
 	for !rl.WindowShouldClose() {
 		switch scene_state {
 		case .Menu:
 			if menu.play_pressed {
 				scene_state = .Game
-				conf.grid_width = menu_get_grid_width(menu)
-				conf.grid_height = menu_get_grid_height(menu)
-				conf.bomb_count = menu_get_bomb_count(menu)
-				game_free(&game)
-				game = game_create(conf)
-				game_resize(&game)
+				menu_write_config(menu, &config)
+				game_init(&game, config)
 			} else {
 				menu_update(&menu)
 				rl.BeginDrawing()
-				rl.ClearBackground(rl.BLACK)
 				menu_draw(menu)
 				rl.EndDrawing()
 			}
 		case .Game:
 			if game.outcome == .FINISHED {
 				scene_state = .Menu
-				menu = menu_init(conf)
+				menu_init(&menu, config)
 			} else {
 				game_update(&game)
 				rl.BeginDrawing()
-				rl.ClearBackground(rl.BLACK)
 				game_draw(&game)
 				rl.EndDrawing()
 			}
